@@ -81,6 +81,16 @@ public:
         m_right_image_publisher.getNumSubscribers() == 0)
       return;
 
+    static int frame_seq = -1, down_sample_rate = -1;
+    if(down_sample_rate < 1){
+      private_nh_.param("down_sample_rate", down_sample_rate, 2);
+      ROS_WARN("---Down sample rate: %d", down_sample_rate);
+    }
+    frame_seq = (frame_seq+1) % down_sample_rate;
+    if(frame_seq > 0)
+      return;
+
+
     std_msgs::Header header_l, header_r;
     header_l.stamp = hardTimeToSoftTime(time);
     header_l.frame_id = "camera_left_frame";
@@ -98,6 +108,16 @@ public:
   void publishImu(ImuData imu) {
     if (m_imu_publisher.getNumSubscribers() == 0)
       return;
+
+    static int frame_seq = -1, imu_down_sample_rate = -1;
+    if(imu_down_sample_rate < 1){
+      private_nh_.param("imu_down_sample_rate", imu_down_sample_rate, 5);
+      ROS_WARN("---IMU Down sample rate: %d", imu_down_sample_rate);
+    }
+    frame_seq = (frame_seq+1) % imu_down_sample_rate;
+    if(frame_seq > 0)
+      return;
+
 
     sensor_msgs::Imu msg;
     msg.header.stamp = hardTimeToSoftTime(imu.timestamp);
