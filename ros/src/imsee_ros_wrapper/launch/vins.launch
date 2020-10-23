@@ -6,6 +6,9 @@
   <group ns="$(arg imsee)">
     <node name="imsee_wrapper_node" pkg="imsee_ros_wrapper" type="imsee_wrapper_node" output="screen" respawn="true" respawn_delay="10">
       <rosparam file="$(find imsee_ros_wrapper)/config/vins.yaml" command="load" />
+      <param name="image_dsr"    type="int"     value="$(arg image_dsr)"/>
+      <param name="imu_dsr"      type="int"     value="$(arg imu_dsr)"/>
+
     </node>
   </group>
 </launch>

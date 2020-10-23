@@ -83,7 +83,7 @@ public:
 
     static int frame_seq = -1, down_sample_rate = -1;
     if(down_sample_rate < 1){
-      private_nh_.param("down_sample_rate", down_sample_rate, 2);
+      private_nh_.param("image_dsr", down_sample_rate, 2);
       ROS_WARN("---Down sample rate: %d", down_sample_rate);
     }
     frame_seq = (frame_seq+1) % down_sample_rate;
@@ -111,7 +111,7 @@ public:
 
     static int frame_seq = -1, imu_down_sample_rate = -1;
     if(imu_down_sample_rate < 1){
-      private_nh_.param("imu_down_sample_rate", imu_down_sample_rate, 5);
+      private_nh_.param("imu_dsr", imu_down_sample_rate, 5);
       ROS_WARN("---IMU Down sample rate: %d", imu_down_sample_rate);
     }
     frame_seq = (frame_seq+1) % imu_down_sample_rate;
@@ -367,9 +367,9 @@ public:
     m_detector_publisher =
         it_imsee.advertiseCamera("/imsee/image/detector", 1, true);
     m_left_image_publisher =
-        it_imsee.advertiseCamera("/imsee/image/left", 1, true);
+        it_imsee.advertiseCamera("/left", 1, true);
     m_right_image_publisher =
-        it_imsee.advertiseCamera("/imsee/image/right", 1, true);
+        it_imsee.advertiseCamera("/right", 1, true);
     m_rectified_left_image_publisher =
         it_imsee.advertiseCamera("/imsee/image/rectified/left", 1, true);
     m_rectified_right_image_publisher =
@@ -380,7 +380,7 @@ public:
 
     m_pointcloud_publisher =
         nh_.advertise<sensor_msgs::PointCloud2>("/imsee/points", 1, true);
-    m_imu_publisher = nh_.advertise<sensor_msgs::Imu>("/imsee/imu", 100);
+    m_imu_publisher = nh_.advertise<sensor_msgs::Imu>("/imu", 100);
     if (m_pSDK) {
       std::cout << "Already Exist" << std::endl;
     } else if (!m_pSDK) {
