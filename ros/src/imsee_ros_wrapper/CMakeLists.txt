@@ -48,6 +48,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+find_package(Eigen3 REQUIRED)
+
 generate_messages(
    DEPENDENCIES
    std_msgs
@@ -89,6 +91,7 @@ add_compile_options(-std=c++11)
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${SDK_DIR}/include
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 set(LINK_LIBS

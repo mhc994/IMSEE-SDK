@@ -21,6 +21,7 @@
 #include <tf/tf.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
+#include <eigen3/Eigen/Core>
 #define _ADDRESSREF(v) (&(v))
 
 static const double PI = 3.14159265358979323846;
@@ -123,9 +124,18 @@ public:
     msg.header.stamp = hardTimeToSoftTime(imu.timestamp);
     msg.header.frame_id = "camera_imu_frame";
 
-    msg.linear_acceleration.x = imu.accel[0] * GRAVITY;
-    msg.linear_acceleration.y = imu.accel[1] * GRAVITY;
-    msg.linear_acceleration.z = imu.accel[2] * GRAVITY;
+    Eigen::Matrix3f R;
+    R <<  0, 0, 1,
+          1, 0, 0,
+          0, 1, 0;
+    Eigen::Vector3f acc(imu.accel[0], imu.accel[1], imu.accel[2]);
+    Eigen::Vector3f gyro(imu.gyro[0], imu.gyro[1], imu.gyro[2]);
+    acc = R * acc * GRAVITY;
+    gyro = R * gyro * PI / 180;
+
+    msg.linear_acceleration.x = acc[0];
+    msg.linear_acceleration.y = acc[1];
+    msg.linear_acceleration.z = acc[2];
 
     msg.linear_acceleration_covariance[0] = 0;
     msg.linear_acceleration_covariance[1] = 0;
@@ -139,9 +149,9 @@ public:
     msg.linear_acceleration_covariance[7] = 0;
     msg.linear_acceleration_covariance[8] = 0;
 
-    msg.angular_velocity.x = imu.gyro[0] * PI / 180;
-    msg.angular_velocity.y = imu.gyro[1] * PI / 180;
-    msg.angular_velocity.z = imu.gyro[2] * PI / 180;
+    msg.angular_velocity.x = gyro[0];
+    msg.angular_velocity.y = gyro[1];
+    msg.angular_velocity.z = gyro[2];
 
     msg.angular_velocity_covariance[0] = 0;
     msg.angular_velocity_covariance[1] = 0;
