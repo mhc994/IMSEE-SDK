@@ -110,20 +110,6 @@ public:
     if (m_imu_publisher.getNumSubscribers() == 0)
       return;
 
-    static int frame_seq = -1, imu_down_sample_rate = -1;
-    if(imu_down_sample_rate < 1){
-      private_nh_.param("imu_dsr", imu_down_sample_rate, 5);
-      ROS_WARN("---IMU Down sample rate: %d", imu_down_sample_rate);
-    }
-    frame_seq = (frame_seq+1) % imu_down_sample_rate;
-    if(frame_seq > 0)
-      return;
-
-
-    sensor_msgs::Imu msg;
-    msg.header.stamp = hardTimeToSoftTime(imu.timestamp);
-    msg.header.frame_id = "camera_imu_frame";
-
     Eigen::Matrix3f R;
     R <<  0, 0, 1,
           1, 0, 0,
@@ -133,39 +119,66 @@ public:
     acc = R * acc * GRAVITY;
     gyro = R * gyro * PI / 180;
 
-    msg.linear_acceleration.x = acc[0];
-    msg.linear_acceleration.y = acc[1];
-    msg.linear_acceleration.z = acc[2];
+    static int imu_down_sample_rate = -1;
+    if(imu_down_sample_rate < 1){
+      private_nh_.param("imu_dsr", imu_down_sample_rate, 5);
+      ROS_WARN("---IMU Down sample rate: %d", imu_down_sample_rate);
+    }
 
-    msg.linear_acceleration_covariance[0] = 0;
-    msg.linear_acceleration_covariance[1] = 0;
-    msg.linear_acceleration_covariance[2] = 0;
+    static int frame_seq = 0;
+    static float acc_sum[3]={0,0,0};
+    static float gyro_sum[3]={0,0,0};
+    static double time_sum = 0;
 
-    msg.linear_acceleration_covariance[3] = 0;
-    msg.linear_acceleration_covariance[4] = 0;
-    msg.linear_acceleration_covariance[5] = 0;
+    for(int i=0;i<3;i++){
+      acc_sum[i] += acc[i];
+      gyro_sum[i] += gyro[i];
+    }
+    time_sum += imu.timestamp;
 
-    msg.linear_acceleration_covariance[6] = 0;
-    msg.linear_acceleration_covariance[7] = 0;
-    msg.linear_acceleration_covariance[8] = 0;
+    frame_seq++;
+    if(frame_seq == imu_down_sample_rate){
+      sensor_msgs::Imu msg;
+      msg.header.stamp = hardTimeToSoftTime(time_sum/imu_down_sample_rate);
+      msg.header.frame_id = "camera_imu_frame";
+    
+      msg.linear_acceleration.x = acc_sum[0]/imu_down_sample_rate;
+      msg.linear_acceleration.y = acc_sum[1]/imu_down_sample_rate;
+      msg.linear_acceleration.z = acc_sum[2]/imu_down_sample_rate;
+        
+      msg.angular_velocity.x = gyro_sum[0]/imu_down_sample_rate;
+      msg.angular_velocity.y = gyro_sum[1]/imu_down_sample_rate;
+      msg.angular_velocity.z = gyro_sum[2]/imu_down_sample_rate;
 
-    msg.angular_velocity.x = gyro[0];
-    msg.angular_velocity.y = gyro[1];
-    msg.angular_velocity.z = gyro[2];
+      msg.linear_acceleration_covariance[0] = 0;
+      msg.linear_acceleration_covariance[1] = 0;
+      msg.linear_acceleration_covariance[2] = 0;
+      msg.linear_acceleration_covariance[3] = 0;
+      msg.linear_acceleration_covariance[4] = 0;
+      msg.linear_acceleration_covariance[5] = 0;
+      msg.linear_acceleration_covariance[6] = 0;
+      msg.linear_acceleration_covariance[7] = 0;
+      msg.linear_acceleration_covariance[8] = 0;
 
-    msg.angular_velocity_covariance[0] = 0;
-    msg.angular_velocity_covariance[1] = 0;
-    msg.angular_velocity_covariance[2] = 0;
+      msg.angular_velocity_covariance[0] = 0;
+      msg.angular_velocity_covariance[1] = 0;
+      msg.angular_velocity_covariance[2] = 0;
+      msg.angular_velocity_covariance[3] = 0;
+      msg.angular_velocity_covariance[4] = 0;
+      msg.angular_velocity_covariance[5] = 0;
+      msg.angular_velocity_covariance[6] = 0;
+      msg.angular_velocity_covariance[7] = 0;
+      msg.angular_velocity_covariance[8] = 0;
 
-    msg.angular_velocity_covariance[3] = 0;
-    msg.angular_velocity_covariance[4] = 0;
-    msg.angular_velocity_covariance[5] = 0;
+      m_imu_publisher.publish(msg);
 
-    msg.angular_velocity_covariance[6] = 0;
-    msg.angular_velocity_covariance[7] = 0;
-    msg.angular_velocity_covariance[8] = 0;
-
-    m_imu_publisher.publish(msg);
+      frame_seq = 0;
+      for(int i=0;i<3;i++){
+        acc_sum[i] = 0;
+        gyro_sum[i] = 0;
+      }
+      time_sum = 0;
+    }
   }
 
   void publishPoints(ros::Time stamp, cv::Mat points) {
